@@ -1,10 +1,11 @@
 import os
+import json
 from flask import Flask, request, send_file, jsonify
 import pandas as pd
 import xlsxwriter
 from io import BytesIO
 from flask_cors import CORS
-from helper import process_phone_data,convert_to_integer
+from helper import process_phone_data,convert_to_integer_column
 
 app = Flask(__name__)
 CORS(app)
@@ -15,9 +16,13 @@ def read_and_return():
     # Load the Excel file
     input_file = request.files['file']
     selected_options_str = request.form.get("selectedOptions")
+    
+    selected_options = json.loads(selected_options_str)
 
 
-    print(selected_options_str)
+    print(selected_options)
+
+   
     
     #check if no file uploaded 
     if not input_file:
@@ -46,11 +51,16 @@ def read_and_return():
 
     # Convert the 'MNT IMP' column to integers
 
-    cleaned_df = process_phone_data(df,'Tél_Client',drop_duplicates=True)
-    cleaned_df = convert_to_integer(df,'Nbre_IMP')
-    cleaned_df = convert_to_integer(df,'Mnt Imp')
 
-
+    for key, value in selected_options.items():
+        #check if the value is equal the telephone
+        if value == 'telephone':
+            print("process phone data" + key + " " + value)
+            df = process_phone_data(df,key,drop_duplicates=True)
+        elif value == 'montant':
+            print("convert to integer" + key + " " + value)
+            df[key] = convert_to_integer_column(df[key])
+    
     
 
     output = BytesIO()
