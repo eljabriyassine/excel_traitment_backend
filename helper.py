@@ -1,40 +1,17 @@
 import pandas as pd
 import re
-import os 
 
 
-def process_phone_data(input_file):
-    """
-    Processes phone number data in a CSV file.
-    
-    Args:
-        input_file (str): Path to the input CSV file.
-        
-    Returns:
-        pd.DataFrame: The cleaned DataFrame.
-    """
-
-	#determine the file extension
-	# file_extension = os.path.splitext(input_file)[1]
-	file_extension = os.path.splitext(input_file)[1].lower() 
-
-	#check if the file is an excel file
-	if file_extension == '.csv':
-		df.read_csv(input_file)
-	elif file_extension == '.xlsx':
-        df = pd.read_excel(input_file, engine='openpyxl')
-	elif file_extension == '.xls':
-        df = pd.read_excel(input_file, engine='xlrd')
-
-    
-    # Strip whitespace from column names
-    df.columns = df.columns.str.strip()
+def process_phone_data(df,name_col,drop_duplicates=False):
     
     # Convert the 'MNT IMP' column to integers
-    df['MNT IMP'] = df['MNT IMP'].apply(lambda x: int(x))
+    # df['MNT IMP'] = df['MNT IMP'].apply(lambda x: int(x))
     
-    # Remove duplicates based on the 'TEL CLIENT' column
-    df = df.drop_duplicates(subset=['TEL CLIENT'])
+    # Remove duplicates based on the name_col column
+    if drop_duplicates:
+        df = df.drop_duplicates(subset=[name_col])
+
+	
     
     # Function to clean phone numbers
     def clean_phone_number(phone):
@@ -42,18 +19,23 @@ def process_phone_data(input_file):
         cleaned = re.sub(r"[^\d+]", "", phone)
         return cleaned
     
-    # Apply cleaning to 'TEL CLIENT' column
-    df['TEL CLIENT'] = df['TEL CLIENT'].astype(str).apply(clean_phone_number)
+    # Apply cleaning to name_col column
+    df[name_col] = df[name_col].astype(str).apply(clean_phone_number)
+    
     
     # Add '0' to numbers with length 9
-    df['TEL CLIENT'] = df['TEL CLIENT'].apply(lambda x: '0' + x if len(x) == 9 else x)
+    df[name_col] = df[name_col].apply(lambda x: '0' + x if len(x) == 9 else x)
     
     # Replace numbers starting with +212 or 00212 with 0
-    df['TEL CLIENT'] = df['TEL CLIENT'].apply(lambda x: '0' + x[4:] if x.startswith('+212') else x)
-    df['TEL CLIENT'] = df['TEL CLIENT'].apply(lambda x: '0' + x[5:] if x.startswith('00212') else x)
+    df[name_col] = df[name_col].apply(lambda x: '0' + x[4:] if x.startswith('+212') else x)
+    df[name_col] = df[name_col].apply(lambda x: '0' + x[5:] if x.startswith('00212') else x)
     
-    # Remove rows where the length of 'TEL CLIENT' is not 10
-    df = df[df['TEL CLIENT'].str.len() == 10]
+    # Remove rows where the length of name_col is not 10
+    df = df[df[name_col].str.len() == 10]
     
-    
+    return df
+
+
+def convert_to_integer(df,col):
+    df[col] = df[col].apply(lambda x: int(x))
     return df
