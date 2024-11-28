@@ -1,27 +1,36 @@
 import pandas as pd
-import re
-from helper import process_phone_data,convert_to_integer_column
 
+def process_phone_data(df, name_col, drop_duplicates=False):
+    # Print the dataframe before removing duplicates
+    print("Before dropping duplicates:")
+    print(df.head())
+    
+    # Remove duplicates based on the name_col column
+    if drop_duplicates:
+        df = df.drop_duplicates(subset=[name_col])
+    
+    # Print the dataframe after removing duplicates
+    print("After dropping duplicates:")
+    print(df.head())
+    
+    # Convert the 'MNT IMP' column to integers (if it's a numeric column)
+    if 'MNT IMP' in df.columns:
+        df['MNT IMP'] = df['MNT IMP'].astype(int)
+    
+    return df
 
-# Example usage
-input_file = './compagne.xlsx'
+# Sample data
+data = {
+    'TEL CLIENT': ['0661250473', '0661250473', '0661772696', '0661250473'],
+    'TIERS': [2802966, 3174265, 2894456, 3174224],
+    'MNT IMP': [50946.65, 18924.38, 15370.78, 18414.38]
+}
 
-# Process the file
+df = pd.DataFrame(data)
 
-	
-df=pd.read_excel(input_file)
-df = process_phone_data(df,'Tél_Client',drop_duplicates=True)
-df = process_phone_data(df,'Tél_ Gestionnaire',drop_duplicates=False)
-df['Nbre_IMP'] = convert_to_integer_column(df['Nbre_IMP'])
-df['Mnt Imp'] = convert_to_integer_column(df['Mnt Imp'])
+# Call the function with drop_duplicates set to True
+df_cleaned = process_phone_data(df, 'TEL CLIENT', drop_duplicates=True)
 
-
-print(df.head(10))
-
-#save the cleaned data to a new excel file
-df.to_excel('cleaned_data.xlsx', index=False)
-
-# print(df.head())
-# print(cleaned_df2)
-
-
+# View the cleaned DataFrame
+print("Cleaned data:")
+print(df_cleaned)

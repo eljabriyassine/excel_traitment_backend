@@ -2,6 +2,8 @@ import os
 import json
 from flask import Flask, request, send_file, jsonify
 import pandas as pd
+from flask_sqlalchemy import SQLAlchemy
+
 import xlsxwriter
 from io import BytesIO
 from flask_cors import CORS
@@ -9,6 +11,13 @@ from helper import process_phone_data,convert_to_integer_column
 
 app = Flask(__name__)
 CORS(app)
+
+
+# MySQL configuration
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = '123'
+app.config['MYSQL_DB'] = 'my_database'
 
 
 @app.route("/process_excel", methods=["POST"])
@@ -47,7 +56,7 @@ def read_and_return():
         #check if the value is equal the telephone
         if value == 'telephone':
             print("process phone data" + key + " " + value)
-            df = process_phone_data(df,key,drop_duplicates=False)
+            df = process_phone_data(df,key,drop_duplicates=True)
         elif value == 'montant':
             print("convert to integer" + key + " " + value)
             df[key] = convert_to_integer_column(df[key])
