@@ -2,23 +2,59 @@ import os
 import json
 from flask import Flask, request, send_file, jsonify
 import pandas as pd
-from flask_sqlalchemy import SQLAlchemy
-
 import xlsxwriter
 from io import BytesIO
 from flask_cors import CORS
 from helper import process_phone_data,convert_to_integer_column
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+from sqlalchemy import create_engine
+
+
 
 app = Flask(__name__)
 CORS(app)
 
 
-# MySQL configuration
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '123'
-app.config['MYSQL_DB'] = 'my_database'
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123@localhost/excel_storage'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Suppress warning
 
+# Initialize SQLAlchemy
+db = SQLAlchemy(app)
+
+class ExcelFile(db.Model):
+    __tablename__ = 'excel_files'  # Name of the table in the database
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    file_name = db.Column(db.String(255), nullable=False)
+    file_data = db.Column(db.LargeBinary, nullable=False)  # To store the actual file as binary data (Blob)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<ExcelFile {self.file_name}>"
+
+
+
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123@localhost/excel_storage'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Suppress warning
+
+
+@app.route('/test-db-connection')
+def test_db_connection():
+    try:
+        # Create a connection to the database using SQLAlchemy's engine
+        engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+        connection = engine.connect()  # Try to establish a connection
+        connection.close()  # Close the connection if successful
+        
+        print('Database connection successful!')
+        return jsonify({"message": "Database connection successful!"}), 200
+    except Exception as e:
+        print('Error connecting to the database:', str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/process_excel", methods=["POST"])
 def read_and_return():

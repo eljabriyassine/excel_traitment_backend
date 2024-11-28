@@ -63,7 +63,7 @@ def process_phone_data(df,name_col,drop_duplicates=False):
     print("Cleaned data:")
     print(df)
 
-    return df,invalid_data
+    return df
 
 
 def convert_to_integer_column(series):
