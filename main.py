@@ -40,15 +40,6 @@ def read_and_return():
     else:
         raise ValueError(f"Unsupported file format: {file_extension}")
 
-
-    #sleep from 3 seconds
-    import time
-    time.sleep(3)
-
-
-    # Strip whitespace from column names
-    df.columns = df.columns.str.strip()
-
     # Convert the 'MNT IMP' column to integers
 
 
@@ -56,7 +47,7 @@ def read_and_return():
         #check if the value is equal the telephone
         if value == 'telephone':
             print("process phone data" + key + " " + value)
-            df = process_phone_data(df,key,drop_duplicates=True)
+            df = process_phone_data(df,key,drop_duplicates=False)
         elif value == 'montant':
             print("convert to integer" + key + " " + value)
             df[key] = convert_to_integer_column(df[key])

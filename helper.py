@@ -7,7 +7,13 @@ def process_phone_data(df,name_col,drop_duplicates=False):
     
     # Remove duplicates based on the name_col column
     if drop_duplicates:
+        # df = df.drop_duplicates(subset=[name_col])
+        df_dropped = df[df.duplicated(subset=[name_col])]
         df = df.drop_duplicates(subset=[name_col])
+        
+        # Save dropped rows to a new CSV file
+        df_dropped.to_csv(f'{output_dir}/dropped_rows.csv', index=False)
+    print(df_dropped)
     
     # # Function to clean phone numbers
     def clean_phone_number(phone):
