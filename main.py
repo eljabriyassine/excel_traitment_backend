@@ -9,6 +9,7 @@ from helper import process_phone_data,convert_to_integer_column
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from sqlalchemy import create_engine
+from sqlalchemy.dialects.mysql import MEDIUMBLOB
 
 
 
@@ -17,29 +18,31 @@ CORS(app)
 
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123@localhost/excel_storage'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123@localhost/gomobile'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Suppress warning
+
 
 # Initialize SQLAlchemy
 db = SQLAlchemy(app)
 
 class ExcelFile(db.Model):
-    __tablename__ = 'excel_files'  # Name of the table in the database
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     file_name = db.Column(db.String(255), nullable=False)
-    file_data = db.Column(db.LargeBinary, nullable=False)  # To store the actual file as binary data (Blob)
+    file_data = db.Column(MEDIUMBLOB, nullable=False) 
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def __repr__(self):
-        return f"<ExcelFile {self.file_name}>"
 
+@app.route('/upload-excel', methods=['POST'])
+def upload_excel():
+    # Load the Excel file
+    input_file = request.files['file']
+    
+    if not input_file:
+        return jsonify({"error": "No file uploaded"}), 400
 
+    return jsonify({"message": f'Excel file uploaded successfully {input_file.filename}'}), 201
 
-
-# Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123@localhost/excel_storage'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Suppress warning
 
 
 @app.route('/test-db-connection')
@@ -103,7 +106,21 @@ def read_and_return():
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         df.to_excel(writer, index=False, sheet_name="Sheet1")
 
+    print(output)
     output.seek(0)  
+    # Save the file to the database
+    excel_file = ExcelFile(
+        file_name="returned_data.xlsx",
+        file_data=output.read()
+    )
+
+    db.session.add(excel_file)
+    db.session.commit()
+
+    output.seek(0)  
+
+    print(output)
+    print("File saved to the database!")
 
     # Return the file for download
     return send_file(
