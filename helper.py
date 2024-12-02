@@ -24,7 +24,6 @@ def process_phone_data(df,invalid_data,name_col,drop_duplicates=False):
     df.loc[:, name_col]  = df[name_col].apply(lambda x: '0' + x[5:] if x.startswith('00212') else x)
     
 
-    # inital invalid_data with empty dataframe
     # Remove rows where the length of name_col is not 10 and assosiated the rest df invalid_data
     invalid_data = df.loc[
         (df[name_col].str.len() != 10)
@@ -39,12 +38,6 @@ def process_phone_data(df,invalid_data,name_col,drop_duplicates=False):
         (df[name_col].str.startswith(('05', '06', '07', '08')))
     ]
    
-
-
-
-    df = df.loc[
-        (df[name_col].str.startswith(('05', '06', '07', '08')))
-    ]
     # #Remove rows where the length of name_col is not 10
     df = df.loc[
         (df[name_col].str.len() == 10)
@@ -57,10 +50,6 @@ def process_phone_data(df,invalid_data,name_col,drop_duplicates=False):
         df = df.drop_duplicates(subset=[name_col], keep='first')
         # df = df.drop_duplicates(subset=[name_col])
 
-    print("Invalid data:")
-    print(invalid_data)
-    print("Cleaned data:")
-    print(df)
 
     return df,invalid_data
 

@@ -1,4 +1,3 @@
-import os
 import json
 from flask import Flask, request, send_file, jsonify
 import pandas as pd
@@ -7,11 +6,9 @@ from io import BytesIO
 from flask_cors import CORS
 from helper import process_phone_data,convert_to_integer_column
 from datetime import datetime
-from sqlalchemy import create_engine
-from sqlalchemy.dialects.mysql import MEDIUMBLOB
 
-from db_config import db, ExcelFile  # Import db and ExcelFile
-
+from db_config import db, ExcelFile  
+import zipfile
 
 
 
@@ -27,21 +24,6 @@ db.init_app(app)
 
 
 
-# @app.route('/test-db-connection')
-# def test_db_connection():
-    # try:
-    #     # Create a connection to the database using SQLAlchemy's engine
-    #     engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
-    #     connection = engine.connect()  # Try to establish a connection
-    #     connection.close()  # Close the connection if successful
-        
-    #     print('Database connection successful!')
-    #     return jsonify({"message": "Database connection successful!"}), 200
-    # except Exception as e:
-    #     print('Error connecting to the database:', str(e))
-    #     return jsonify({"error": str(e)}), 500
-
-
 @app.route("/process_excel", methods=["POST"])
 def read_and_return():
     # Load the Excel file
@@ -51,9 +33,6 @@ def read_and_return():
     selected_options = json.loads(selected_options_str)
 
 
-    print(selected_options)
-
-   
     
     #check if no file uploaded 
     if not input_file:
@@ -69,9 +48,10 @@ def read_and_return():
     elif file_extension == 'xls':
         df = pd.read_excel(input_file, engine='xlrd')
     else:
-        raise ValueError(f"Unsupported file format: {file_extension}")
+        return jsonify({"error": f"Unsupported file format: {file_extension}"}), 400
+    
 
-    # Convert the 'MNT IMP' column to integers
+
     invalid_data = pd.DataFrame()
 
     for key, value in selected_options.items():
@@ -87,7 +67,7 @@ def read_and_return():
 
     valid_output_file = BytesIO()
     with pd.ExcelWriter(valid_output_file, engine="xlsxwriter") as writer:
-        df.to_excel(writer, index=False, sheet_name="Sheet1")
+        df.to_excel(writer, index=False, sheet_name="Valid data")
 
     valid_output_file.seek(0)  
 
@@ -103,6 +83,7 @@ def read_and_return():
     excel_file = ExcelFile(
         file_name=input_file.filename,
         name_valid_data=f'valid_{input_file.filename}',
+        name_invalid_data=f'invalid_{input_file.filename}',
     )
     db.session.add(excel_file)
     db.session.commit()
@@ -124,15 +105,45 @@ def read_and_return():
  
     valid_output_file.seek(0)
     invalid_data_output_file.seek(0)
+
+    
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
+        # Add the valid output file to the ZIP
+        valid_output_file.seek(0)
+        zip_file.writestr(f'valid_{input_file.filename}', valid_output_file.read())
+        
+        # Add the invalid output file to the ZIP
+        invalid_data_output_file.seek(0)
+        zip_file.writestr(f'invalid_{input_file.filename}', invalid_data_output_file.read())
+
     
     
-    
+    zip_buffer.seek(0)
     return send_file(
-        valid_output_file,
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        download_name="returned_data.xlsx",  # Set the download filename
+        zip_buffer,
+        mimetype="application/zip",
+        download_name="data_files.zip",
         as_attachment=True,
     )
+
+
+@app.route("/get_all_file_excel" , methods=["GET"])
+def return_all_file():
+    #return all file from the database
+    excel_files = ExcelFile.query.all()
+    files = []
+    print(excel_files)
+    for file in excel_files:
+        files.append({
+            "id": file.id,
+            "file_name": file.file_name,
+            "name_valid_data": file.name_valid_data,
+            "name_invalid_data": file.name_invalid_data,
+            "uploaded_at": file.uploaded_at
+        })
+    return jsonify(files)
+
 
 
 if __name__ == '__main__':
