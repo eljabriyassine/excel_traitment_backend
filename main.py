@@ -144,7 +144,11 @@ def return_all_file():
         })
     return jsonify(files)
 
-
+#get file by id 
+@app.route("/get_file", methods=["GET"])
+def get_file():
+    id = request.args.get('id')
+	return f"Received ID via GET query: {id}"
 
 if __name__ == '__main__':
     app.run(debug=True)
