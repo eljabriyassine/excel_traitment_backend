@@ -24,6 +24,11 @@ db.init_app(app)
 
 
 
+#endoipoit say Hello 
+@app.route("/", methods=["GET"])
+def hello():
+	return "Hello, World! :)"
+
 @app.route("/process_excel", methods=["POST"])
 def read_and_return():
     # Load the Excel file
@@ -61,7 +66,7 @@ def read_and_return():
             df, invalid_data = process_phone_data(df,invalid_data,key,drop_duplicates=True)
         elif value == 'montant':
             print("convert to integer" + key + " " + value)
-            df[key] = convert_to_integer_column(df[key])    
+            df,invalid_data = convert_to_integer_column(df,invalid_data,key)    
     
     
 
@@ -133,7 +138,6 @@ def return_all_file():
     #return all file from the database
     excel_files = ExcelFile.query.all()
     files = []
-    print(excel_files)
     for file in excel_files:
         files.append({
             "id": file.id,
@@ -145,10 +149,24 @@ def return_all_file():
     return jsonify(files)
 
 #get file by id 
-@app.route("/get_file", methods=["GET"])
-def get_file():
-    id = request.args.get('id')
-	return f"Received ID via GET query: {id}"
+@app.route("/download_file/<int:id>", methods=["POST"])
+def get_file(id):
+    if not id:
+        return jsonify({"error": "No file id provided"}), 400
+    file_type = request.form.get('type')
+
+    #retreive the data from the database based on the id
+    excel_file = ExcelFile.query.filter_by(id=id).first()
+    if not excel_file:
+        return jsonify({"error": "File not found"}), 404
+    get_file = open(f'./uploads/{excel_file.file_name}', 'rb')
+    #mintype is excel
+    return send_file(
+        get_file,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        download_name="hhhhhh",
+        as_attachment=True
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
