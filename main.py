@@ -154,6 +154,7 @@ def return_all_file():
 			"name_valid_data": file.name_valid_data,
 			"name_invalid_data": file.name_invalid_data,
 			"uploaded_at": file.uploaded_at
+			"raison": file.raison
 		})
 	return jsonify(files)
 
