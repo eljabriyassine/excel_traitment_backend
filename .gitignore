@@ -20,3 +20,7 @@ Thumbs.db
 .idea/
 *.sublime-workspace
 *.sublime-project
+
+
+#ignore the uploaded files
+uploaded_files/

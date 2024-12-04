@@ -1,3 +1,4 @@
+import os
 import json
 from flask import Flask, request, send_file, jsonify
 import pandas as pd
@@ -31,142 +32,134 @@ def hello():
 
 @app.route("/process_excel", methods=["POST"])
 def read_and_return():
-    # Load the Excel file
-    input_file = request.files['file']
-    selected_options_str = request.form.get("selectedOptions")
-    
-    selected_options = json.loads(selected_options_str)
+	# Load the Excel file
+	input_file = request.files['file']
+	selected_options_str = request.form.get("selectedOptions")
+	
+	selected_options = json.loads(selected_options_str)
 
 
-    
-    #check if no file uploaded 
-    if not input_file:
-        return jsonify({"error": "No file uploaded"}), 400
+	
+	#check if no file uploaded 
+	if not input_file:
+		return jsonify({"error": "No file uploaded"}), 400
 
-    file_extension = input_file.filename.split('.')[-1].lower() 
+	file_extension = input_file.filename.split('.')[-1].lower() 
 
-     #check if the file is an excel file
-    if file_extension == 'csv':
-        df = pd.read_csv(input_file)
-    elif file_extension == 'xlsx':
-        df = pd.read_excel(input_file, engine='openpyxl')
-    elif file_extension == 'xls':
-        df = pd.read_excel(input_file, engine='xlrd')
-    else:
-        return jsonify({"error": f"Unsupported file format: {file_extension}"}), 400
-    
-
-
-    invalid_data = pd.DataFrame()
-
-    for key, value in selected_options.items():
-        #check if the value is equal the telephone
-        if value == 'telephone':
-            print("process phone data" + key + " " + value)
-            df, invalid_data = process_phone_data(df,invalid_data,key,drop_duplicates=True)
-        elif value == 'montant':
-            print("convert to integer" + key + " " + value)
-            df,invalid_data = convert_to_integer_column(df,invalid_data,key)    
-    
-    
-
-    valid_output_file = BytesIO()
-    with pd.ExcelWriter(valid_output_file, engine="xlsxwriter") as writer:
-        df.to_excel(writer, index=False, sheet_name="Valid data")
-
-    valid_output_file.seek(0)  
-
-    # Save the invalid data to a separate sheet
-    invalid_data_output_file = BytesIO()
-    with pd.ExcelWriter(invalid_data_output_file, engine="xlsxwriter") as writer:
-        invalid_data.to_excel(writer, index=False, sheet_name="Invalid Data")
-        
-    invalid_data_output_file.seek(0)
+	 #check if the file is an excel file
+	if file_extension == 'csv':
+		df = pd.read_csv(input_file)
+	elif file_extension == 'xlsx':
+		df = pd.read_excel(input_file, engine='openpyxl')
+	elif file_extension == 'xls':
+		df = pd.read_excel(input_file, engine='xlrd')
+	else:
+		return jsonify({"error": f"Unsupported file format: {file_extension}"}), 400
+	
+	#check if the file is empty
+	if df.empty:
+		return jsonify({"error": "File is empty"}), 400
 
 
-     # Save the file to the database
-    excel_file = ExcelFile(
-        file_name=input_file.filename,
-        name_valid_data=f'valid_{input_file.filename}',
-        name_invalid_data=f'invalid_{input_file.filename}',
-    )
-    db.session.add(excel_file)
-    db.session.commit()
+	size = df.shape[0]
+	invalid_data = pd.DataFrame()
+
+	for key, value in selected_options.items():
+		#check if the value is equal the telephone
+		if value == 'telephone':
+			print("process phone data" + key + " " + value)
+			df, invalid_data = process_phone_data(df,invalid_data,key,drop_duplicates=True)
+		elif value == 'montant':
+			print("convert to integer" + key + " " + value)
+			df,invalid_data = convert_to_integer_column(df,invalid_data,key)    
+	
+	
+
+	valid_output_file = BytesIO()
+	with pd.ExcelWriter(valid_output_file, engine="xlsxwriter") as writer:
+		df.to_excel(writer, index=False, sheet_name="Valid data")
+
+	valid_output_file.seek(0)  
+
+	# Save the invalid data to a separate sheet
+	invalid_data_output_file = BytesIO()
+	with pd.ExcelWriter(invalid_data_output_file, engine="xlsxwriter") as writer:
+		invalid_data.to_excel(writer, index=False, sheet_name="Invalid Data")
+		
+	invalid_data_output_file.seek(0)
+
+
+	 # Save the file to the database
+	excel_file = ExcelFile(
+		file_name=input_file.filename,
+		size=size,
+		name_valid_data=f'valid_{input_file.filename}',
+		name_invalid_data=f'invalid_{input_file.filename}',
+	)
+	db.session.add(excel_file)
+	db.session.commit()
+
+	#check	if the file is saved in the database
+	if not excel_file.id:
+		return jsonify({"error": "Failed to save file to database"}), 500
+
+	new_id = excel_file.id
+	print("new id is " + str(new_id))
 
 
 
+	os.makedirs(f'./uploads/{new_id}')
 
-    input_file.save(f'./uploads/{input_file.filename}')
+	input_file.save(f'./uploads/{new_id}/{input_file.filename}')
 
-    valid_output_file_path = f'./uploads/valid_{input_file.filename}'
-    with open(valid_output_file_path, 'wb') as f:
-        f.write(valid_output_file.read()) 
+	valid_output_file_path = f'./uploads/{new_id}/valid_{input_file.filename}'
+	with open(valid_output_file_path, 'wb') as f:
+		f.write(valid_output_file.read()) 
 
-    invalid_data_output_file_path = f'./uploads/invalid_{input_file.filename}'
-    with open(invalid_data_output_file_path, 'wb') as f:
-        f.write(invalid_data_output_file.read())
-    
-    
- 
-    valid_output_file.seek(0)
-    invalid_data_output_file.seek(0)
+	invalid_data_output_file_path = f'./uploads/{new_id}/invalid_{input_file.filename}'
+	with open(invalid_data_output_file_path, 'wb') as f:
+		f.write(invalid_data_output_file.read())
+	
+	
 
-    
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
-        # Add the valid output file to the ZIP
-        valid_output_file.seek(0)
-        zip_file.writestr(f'valid_{input_file.filename}', valid_output_file.read())
-        
-        # Add the invalid output file to the ZIP
-        invalid_data_output_file.seek(0)
-        zip_file.writestr(f'invalid_{input_file.filename}', invalid_data_output_file.read())
-
-    
-    
-    zip_buffer.seek(0)
-    return send_file(
-        zip_buffer,
-        mimetype="application/zip",
-        download_name="data_files.zip",
-        as_attachment=True,
-    )
+	return jsonify({"message": "File processed successfully"})
 
 
 @app.route("/get_all_file_excel" , methods=["GET"])
 def return_all_file():
-    #return all file from the database
-    excel_files = ExcelFile.query.all()
-    files = []
-    for file in excel_files:
-        files.append({
-            "id": file.id,
-            "file_name": file.file_name,
-            "name_valid_data": file.name_valid_data,
-            "name_invalid_data": file.name_invalid_data,
-            "uploaded_at": file.uploaded_at
-        })
-    return jsonify(files)
+	#return all file from the database
+	excel_files = ExcelFile.query.all()
+	files = []
+	for file in excel_files:
+		files.append({
+			"id": file.id,
+			"file_name": file.file_name,
+			"size": file.size,
+			"name_valid_data": file.name_valid_data,
+			"name_invalid_data": file.name_invalid_data,
+			"uploaded_at": file.uploaded_at
+		})
+	return jsonify(files)
 
 #get file by id 
 @app.route("/download_file/<int:id>", methods=["POST"])
 def get_file(id):
-    if not id:
-        return jsonify({"error": "No file id provided"}), 400
-    file_type = request.form.get('type')
+	if not id:
+		return jsonify({"error": "No file id provided"}), 400
+	file_type = request.form.get('type')
 
-    #retreive the data from the database based on the id
-    excel_file = ExcelFile.query.filter_by(id=id).first()
-    if not excel_file:
-        return jsonify({"error": "File not found"}), 404
-    get_file = open(f'./uploads/{excel_file.file_name}', 'rb')
-    #mintype is excel
-    return send_file(
-        get_file,
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        download_name="hhhhhh",
-        as_attachment=True
-    )
+	#retreive the data from the database based on the id
+	excel_file = ExcelFile.query.filter_by(id=id).first()
+	if not excel_file:
+		return jsonify({"error": "File not found"}), 404
+	get_file = open(f'./uploads/{excel_file.file_name}', 'rb')
+	#mintype is excel
+	return send_file(
+		get_file,
+		mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		download_name="hhhhhh",
+		as_attachment=True
+	)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+	app.run(debug=True)
