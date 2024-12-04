@@ -128,8 +128,11 @@ def read_and_return():
 
 @app.route("/get_all_file_excel" , methods=["GET"])
 def return_all_file():
-	#return all file from the database
-	excel_files = ExcelFile.query.all()
+	#return all file from the database describe reverse
+
+
+	excel_files = ExcelFile.query.order_by(ExcelFile.id.desc()).limit(20).all()
+
 	files = []
 	for file in excel_files:
 		files.append({
