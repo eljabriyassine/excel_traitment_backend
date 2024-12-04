@@ -64,9 +64,9 @@ def read_and_return():
 	#check if the file has empty header
 	# Check if any column header is empty or contains 'Unnamed'
 	headers = df.columns.tolist()
-
 	for header in headers:
-		if len(header.strip()) == 0:
+		
+		if len(header.strip()) == 0 or 'unnamed' in header.lower():
 			 # Save the file to the database
 			excel_file = ExcelFile(
 				file_name=input_file.filename,
@@ -88,7 +88,7 @@ def read_and_return():
 			df,invalid_data = convert_to_integer_column(df,invalid_data,key)    
 	
 	
-
+ 
 	valid_output_file = BytesIO()
 	with pd.ExcelWriter(valid_output_file, engine="xlsxwriter") as writer:
 		df.to_excel(writer, index=False, sheet_name="Valid data")
@@ -153,7 +153,7 @@ def return_all_file():
 			"size": file.size,
 			"name_valid_data": file.name_valid_data,
 			"name_invalid_data": file.name_invalid_data,
-			"uploaded_at": file.uploaded_at
+			"uploaded_at": file.uploaded_at,
 			"raison": file.raison
 		})
 	return jsonify(files)
