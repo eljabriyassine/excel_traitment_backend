@@ -89,6 +89,7 @@ def read_and_return():
 	invalid_data_output_file.seek(0)
 
 
+	print('size is ' + str(size))
 	 # Save the file to the database
 	excel_file = ExcelFile(
 		file_name=input_file.filename,
@@ -142,7 +143,7 @@ def return_all_file():
 	return jsonify(files)
 
 #get file by id 
-@app.route("/download_file", methods=["POST"])
+@app.route("/download_file", methods=["GET"])
 def get_file():
 
     data = request.args  
