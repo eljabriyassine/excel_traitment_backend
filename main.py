@@ -60,23 +60,24 @@ def read_and_return():
 	if df.empty:
 		return jsonify({"error": "File is empty"}), 400
 
+	size = df.shape[0]
 	#check if the file has empty header
 	# Check if any column header is empty or contains 'Unnamed'
 	headers = df.columns.tolist()
-	print(headers)
 
 	for header in headers:
 		if len(header.strip()) == 0:
+			 # Save the file to the database
+			excel_file = ExcelFile(
+				file_name=input_file.filename,
+				size=size,
+				raison="Empty header found in the file"
+			)
+			db.session.add(excel_file)
+			db.session.commit()
 			return jsonify({"error": "Empty header found in the file"}), 400
 
 
-	# Print the headers that are empty or contain 'Unnamed'
-
-		# if '' in headers:
-	# 	return jsonify({"error": "Empty header found in the file"}), 400
-
-
-	size = df.shape[0]
 	invalid_data = pd.DataFrame()
 
 	for key, value in selected_options.items():
