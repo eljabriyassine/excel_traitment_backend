@@ -142,24 +142,39 @@ def return_all_file():
 	return jsonify(files)
 
 #get file by id 
-@app.route("/download_file/<int:id>", methods=["POST"])
-def get_file(id):
-	if not id:
-		return jsonify({"error": "No file id provided"}), 400
-	file_type = request.form.get('type')
+@app.route("/download_file", methods=["POST"])
+def get_file():
 
-	#retreive the data from the database based on the id
-	excel_file = ExcelFile.query.filter_by(id=id).first()
-	if not excel_file:
-		return jsonify({"error": "File not found"}), 404
-	get_file = open(f'./uploads/{excel_file.file_name}', 'rb')
-	#mintype is excel
-	return send_file(
-		get_file,
-		mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-		download_name="hhhhhh",
-		as_attachment=True
-	)
+    data = request.args  
+    file_id = data.get('id')
+    file_type = data.get('type')
+
+    if not file_id:
+        return jsonify({"error": "No file ID provided"}), 400
+    if not file_type:
+        return jsonify({"error": "No file type provided"}), 400
+
+    # Retrieve the data from the database based on the id
+    excel_file = ExcelFile.query.filter_by(id=file_id).first()
+    if not excel_file:
+        return jsonify({"error": "File not found"}), 404
+
+    # Construct the file path
+    file_path = f'./uploads/{file_id}/{file_type}_{excel_file.file_name}'
+    
+    # Validate and ensure file exists
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found on the server"}), 404
+
+    try:
+        return send_file(
+            file_path,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            download_name=excel_file.file_name,
+            as_attachment=True
+        )
+    except Exception as e:
+        return jsonify({"error": f"Failed to send file: {str(e)}"}), 500
 
 if __name__ == '__main__':
 	app.run(debug=True)
