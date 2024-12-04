@@ -60,6 +60,21 @@ def read_and_return():
 	if df.empty:
 		return jsonify({"error": "File is empty"}), 400
 
+	#check if the file has empty header
+	# Check if any column header is empty or contains 'Unnamed'
+	headers = df.columns.tolist()
+	print(headers)
+
+	for header in headers:
+		if len(header.strip()) == 0:
+			return jsonify({"error": "Empty header found in the file"}), 400
+
+
+	# Print the headers that are empty or contain 'Unnamed'
+
+		# if '' in headers:
+	# 	return jsonify({"error": "Empty header found in the file"}), 400
+
 
 	size = df.shape[0]
 	invalid_data = pd.DataFrame()
@@ -67,10 +82,8 @@ def read_and_return():
 	for key, value in selected_options.items():
 		#check if the value is equal the telephone
 		if value == 'telephone':
-			print("process phone data" + key + " " + value)
 			df, invalid_data = process_phone_data(df,invalid_data,key,drop_duplicates=True)
 		elif value == 'montant':
-			print("convert to integer" + key + " " + value)
 			df,invalid_data = convert_to_integer_column(df,invalid_data,key)    
 	
 	
@@ -89,7 +102,6 @@ def read_and_return():
 	invalid_data_output_file.seek(0)
 
 
-	print('size is ' + str(size))
 	 # Save the file to the database
 	excel_file = ExcelFile(
 		file_name=input_file.filename,
@@ -105,7 +117,6 @@ def read_and_return():
 		return jsonify({"error": "Failed to save file to database"}), 500
 
 	new_id = excel_file.id
-	print("new id is " + str(new_id))
 
 
 
