@@ -178,9 +178,6 @@ def get_file_by_file_name():
 	else:
 		return jsonify({"error": "No file name provided"}), 400
 
-	if not excel_files:
-		return jsonify({"message": " no file found"}), 404
-
 	files = []
 	for file in excel_files:
 		files.append({

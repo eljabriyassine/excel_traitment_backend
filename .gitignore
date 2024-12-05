@@ -1,5 +1,6 @@
 # Ignore environment directories
 myenv/
+venv/
 
 # Ignore temporary lock files
 .~lock.*
