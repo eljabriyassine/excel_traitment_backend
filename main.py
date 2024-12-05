@@ -152,14 +152,7 @@ def read_and_return():
 @app.route("/get_all_file_excel" , methods=["GET"])
 def return_all_file():
 	#return all file from the database describe reverse
-	data = request.args
-	file_name = data.get('file_name')
-	print(file_name)
-	if file_name:
-		excel_files = ExcelFile.query.filter(ExcelFile.file_name.like(f'%{file_name}%')).all()
-	else:
-		excel_files = ExcelFile.query.order_by(ExcelFile.id.desc()).limit(20).all()
-	print(len(excel_files))
+	excel_files = ExcelFile.query.order_by(ExcelFile.id.desc()).limit(20).all()
 	if len(excel_files) == 0:
 		return jsonify({"message": "No file found"}), 404
 
@@ -180,13 +173,13 @@ def return_all_file():
 def get_file_by_file_name():
 	data = request.args
 	file_name = data.get('file_name')
-
-	if not file_name:
+	if file_name:
+		excel_files = ExcelFile.query.filter(ExcelFile.file_name.like(f'%{file_name}%')).all()
+	else:
 		return jsonify({"error": "No file name provided"}), 400
 
-	excel_file = ExcelFile.query.filter_by(file_name=file_name).all()
-	if not excel_file:
-		return jsonify({"error": "File not found"}), 404
+	if not excel_files:
+		return jsonify({"message": " no file found"}), 404
 
 	return jsonify({
 		"id": excel_file.id,
