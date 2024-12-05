@@ -181,15 +181,18 @@ def get_file_by_file_name():
 	if not excel_files:
 		return jsonify({"message": " no file found"}), 404
 
-	return jsonify({
-		"id": excel_file.id,
-		"file_name": excel_file.file_name,
-		"size": excel_file.size,
-		"name_valid_data": excel_file.name_valid_data,
-		"name_invalid_data": excel_file.name_invalid_data,
-		"uploaded_at": excel_file.uploaded_at,
-		"raison": excel_file.raison
-	})
+	files = []
+	for file in excel_files:
+		files.append({
+			"id": file.id,
+			"file_name": file.file_name,
+			"size": file.size,
+			"name_valid_data": file.name_valid_data,
+			"name_invalid_data": file.name_invalid_data,
+			"uploaded_at": file.uploaded_at,
+			"raison": file.raison
+		})
+	return jsonify(files)
 
 #get file by id 
 @app.route("/download_file", methods=["GET"])
