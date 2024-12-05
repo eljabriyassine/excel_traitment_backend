@@ -7,17 +7,26 @@ from io import BytesIO
 from flask_cors import CORS
 from helper import process_phone_data,convert_to_integer_column
 from datetime import datetime
+from dotenv import load_dotenv
+
 
 from db_config import db, ExcelFile  
 import zipfile
 
 
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
+# Get individual parts from environment variables
+db_user = os.getenv('DB_USER')
+db_password = os.getenv('DB_PASSWORD')
+db_host = os.getenv('DB_HOST')
+db_name = os.getenv('DB_NAME')
+
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123@localhost/gomobile'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize the database with the app

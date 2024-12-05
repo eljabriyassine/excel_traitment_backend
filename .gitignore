@@ -26,3 +26,9 @@ Thumbs.db
 uploads/
 
 
+# .env file
+.env
+
+#index.py file
+index.py
+
