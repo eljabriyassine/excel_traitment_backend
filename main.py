@@ -75,7 +75,9 @@ def read_and_return():
 			)
 			db.session.add(excel_file)
 			db.session.commit()
-			return jsonify({"error": "Empty header found in the file"}), 400
+			#return with the index of column of invalid data
+			
+			# return jsonify({"error": "Empty header found in the file"}), 400
 
 
 	invalid_data = pd.DataFrame()
@@ -141,9 +143,16 @@ def read_and_return():
 @app.route("/get_all_file_excel" , methods=["GET"])
 def return_all_file():
 	#return all file from the database describe reverse
-
-
-	excel_files = ExcelFile.query.order_by(ExcelFile.id.desc()).limit(20).all()
+	data = request.args
+	file_name = data.get('file_name')
+	print(file_name)
+	if file_name:
+		excel_files = ExcelFile.query.filter(ExcelFile.file_name.like(f'%{file_name}%')).all()
+	else:
+		excel_files = ExcelFile.query.order_by(ExcelFile.id.desc()).limit(20).all()
+	print(len(excel_files))
+	if len(excel_files) == 0:
+		return jsonify({"message": "No file found"}), 404
 
 	files = []
 	for file in excel_files:
@@ -157,6 +166,28 @@ def return_all_file():
 			"raison": file.raison
 		})
 	return jsonify(files)
+
+@app.route("/get_file_by_file_name", methods=["GET"])
+def get_file_by_file_name():
+	data = request.args
+	file_name = data.get('file_name')
+
+	if not file_name:
+		return jsonify({"error": "No file name provided"}), 400
+
+	excel_file = ExcelFile.query.filter_by(file_name=file_name).all()
+	if not excel_file:
+		return jsonify({"error": "File not found"}), 404
+
+	return jsonify({
+		"id": excel_file.id,
+		"file_name": excel_file.file_name,
+		"size": excel_file.size,
+		"name_valid_data": excel_file.name_valid_data,
+		"name_invalid_data": excel_file.name_invalid_data,
+		"uploaded_at": excel_file.uploaded_at,
+		"raison": excel_file.raison
+	})
 
 #get file by id 
 @app.route("/download_file", methods=["GET"])
