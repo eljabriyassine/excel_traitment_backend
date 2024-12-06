@@ -89,10 +89,9 @@ def read_and_return():
 			# return jsonify({"error": "Empty header found in the file"}), 400
 
 
-	invalid_data = pd.DataFrame()
+	invalid_data = pd.DataFrame(columns=["reason"])
 
 	for key, value in selected_options.items():
-		#check if the value is equal the telephone
 		if value == 'telephone':
 			df, invalid_data = process_phone_data(df,invalid_data,key,drop_duplicates=True)
 		elif value == 'montant':
